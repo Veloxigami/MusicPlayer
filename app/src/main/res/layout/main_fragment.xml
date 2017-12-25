@@ -1,0 +1,61 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.veloxigami.myapplication.MainFragment">
+
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recyclerview"
+        android:layout_width="match_parent"
+        android:layout_height="496dp"></android.support.v7.widget.RecyclerView>
+
+    <RelativeLayout
+
+        android:id="@+id/functions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/gradient"
+        android:layout_gravity="bottom"
+        android:gravity="center">
+
+        <SeekBar
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/seekbar"
+            android:background="@drawable/gradient"/>
+
+        <LinearLayout
+            android:layout_below="@+id/seekbar"
+            android:id="@+id/buttonsLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center">
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_media_previous"
+            android:id="@+id/prevButton"
+            android:background="@drawable/gradient"
+            android:layout_marginRight="4dp"/>
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_media_play"
+            android:id="@+id/playButton"
+            android:background="@drawable/gradient"
+            android:layout_marginRight="4dp"/>
+
+        <ImageButton
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@android:drawable/ic_media_next"
+            android:id="@+id/nextButton"
+            android:background="@drawable/gradient"/>
+
+        </LinearLayout>
+    </RelativeLayout>
+
+</FrameLayout>
