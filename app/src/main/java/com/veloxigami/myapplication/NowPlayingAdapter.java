@@ -23,6 +23,7 @@ public class NowPlayingAdapter extends RecyclerView.Adapter<NowPlayingAdapter.Pl
     public interface NowPlayingInterface
     {
         void onSongClick(int position);
+        void onBtnClick(int position);
     }
 
     NowPlayingInterface nowPlayingInterface;
@@ -30,9 +31,11 @@ public class NowPlayingAdapter extends RecyclerView.Adapter<NowPlayingAdapter.Pl
     public NowPlayingAdapter( ArrayList<MusicFile> list, Context context) {
         this.list = list;
         this.context = context;
-        if(context instanceof NowPlayingAdapter.NowPlayingInterface){
-            nowPlayingInterface = (NowPlayingInterface) context;
-        }
+
+    }
+
+    public void setNowPlayingInterface(NowPlayingInterface nowPlayingInterface){
+        this.nowPlayingInterface = nowPlayingInterface;
     }
 
     @Override
@@ -53,20 +56,8 @@ public class NowPlayingAdapter extends RecyclerView.Adapter<NowPlayingAdapter.Pl
         holder.removeItem.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(list.size() == 1){
-                    //stop playing
-                    //clear playlist
-                }
 
-                if(new DataStorage(context).loadAudioIndex() == position){
-                    //remove
-                    //playnextaudio
-                }
-
-                if(new DataStorage(context).loadAudioIndex() > position){
-                    //remove
-                    //audioIndex--
-                }
+                nowPlayingInterface.onBtnClick(position);
             }
         });
 
@@ -90,6 +81,12 @@ public class NowPlayingAdapter extends RecyclerView.Adapter<NowPlayingAdapter.Pl
             duration = (TextView) itemView.findViewById(R.id.duration_text);
             albumArt = (ImageView) itemView.findViewById(R.id.album_art);
             removeItem = (ImageButton) itemView.findViewById(R.id.add_btn);
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    nowPlayingInterface.onSongClick(getAdapterPosition());
+                }
+            });
         }
     }
 }

@@ -1,11 +1,14 @@
 package com.veloxigami.myapplication;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.provider.ContactsContract;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -14,33 +17,42 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Adapter;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
+import com.triggertrap.seekarc.SeekArc;
+
 import java.util.ArrayList;
 
 
-public class MainFragment extends Fragment implements LibraryFragment.libraryFragmentInterface{
+public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayingInterface{
 
 
     private RecyclerView recyclerView;
-    private NowPlayingAdapter playingAdapter;
+    public static NowPlayingAdapter playingAdapter;
     private RecyclerView.LayoutManager manager;
     public static ArrayList<MusicFile> playlist = new ArrayList<>();
-    private ImageButton prevButton,playButton,nextButton;
-    private SeekBar seekBar;
     public static MediaPlayerService playerService;
     public static boolean serviceBound = false;
     private DataStorage storage;
-    public static final String Broadcast_PLAY_NEW_AUDIO = "com.veloxigami.myapplication";
     private ArrayList<MusicFile>  data = new ArrayList<>();
+    private int currentFile;
+
+    public static final String Broadcast_PLAY_NEW_AUDIO = "com.veloxigami.myapplication.playnewaudio";
+    public final static String Broadcast_PLAY_BTN_CHANGE = "com.veloxigami.myapplication.playbuttonchange";
+    public final static String Broadcast_STOP_PLAYING_FOR_CHANGE = "com.veloxigami.myapplication.stopplayingforchange";
+    public final static String Broadcast_SONG_TEXT_CHANGE = "com.veloxigami.myapplication.songtextchange";
+    public final static String Broadcast_TAPS_UPDATE = "com.veloxigami.myapplication.tapUpdate";
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         data = new LibraryFragment().getMusicFiles();
-        //new LibraryFragment().setLibraryFragmentInterface(this);
-
+        registerBtnClickBroadcast();
+        registerViewClickBroadcast();
+        registerNextPlayingBroadcast();
     }
 
     @Override
@@ -49,16 +61,16 @@ public class MainFragment extends Fragment implements LibraryFragment.libraryFra
         // Inflate the layout for this fragment
         View rootView = inflater.inflate(R.layout.main_fragment, container, false);
         playlist.clear();
-
-        prevButton = (ImageButton) rootView.findViewById(R.id.prevButton);
-        playButton = (ImageButton) rootView.findViewById(R.id.playButton);
-        nextButton = (ImageButton) rootView.findViewById(R.id.nextButton);
-        seekBar = (SeekBar) rootView.findViewById(R.id.seekbar);
+       /* if(new DataStorage(getActivity()).loadPlaylist("lastplayed") != null){
+            playlist = new DataStorage(getActivity()).loadPlaylist("lastplayed");
+        }*/
         recyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerview);
+        storage = new DataStorage(getActivity());
 
         manager = new LinearLayoutManager(getActivity());
         recyclerView.setLayoutManager(manager);;
-        this.playingAdapter = new NowPlayingAdapter(playlist,getActivity());
+        playingAdapter = new NowPlayingAdapter(playlist,getActivity());
+        playingAdapter.setNowPlayingInterface(this);
         recyclerView.setAdapter(playingAdapter);
 
         return rootView;
@@ -80,34 +92,40 @@ public class MainFragment extends Fragment implements LibraryFragment.libraryFra
         }
     };
 
+
+
     public void playAudio(int audioIndex){
         if (!serviceBound){
 
-            storage = new DataStorage(getActivity());
+           // storage = new DataStorage(getActivity());
             storage.storeAudio(playlist);
             storage.storeAudioIndex(audioIndex);
-
+            serviceBound = true;
+            Log.v("TAG","Creating new instance");
             Intent playerIntent = new Intent(getActivity(),MediaPlayerService.class);
             getActivity().startService(playerIntent);
             getActivity().bindService(playerIntent,serviceConnection,Context.BIND_AUTO_CREATE);
         }
         else{
 
-            storage = new DataStorage(getActivity());
+            //storage = new DataStorage(getActivity());
             storage.storeAudio(playlist);
             storage.storeAudioIndex(audioIndex);
 
             Intent broadcastIntent = new Intent(Broadcast_PLAY_NEW_AUDIO);
+            Log.v("TAG","Broadcasting");
             getActivity().sendBroadcast(broadcastIntent);
         }
+        currentFile = new DataStorage(getActivity()).loadAudioIndex();
+       Intent playingBroadcast = new Intent(Broadcast_PLAY_BTN_CHANGE);
+       getActivity().sendBroadcast(playingBroadcast);
     }
 
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
 
-        outState.putBoolean("ServiceState", serviceBound);
-        super.onSaveInstanceState(outState);
-    }
+
+
+
+
 
 
     public void saveCurrentPlaying(ArrayList<MusicFile> list,String title){
@@ -118,72 +136,115 @@ public class MainFragment extends Fragment implements LibraryFragment.libraryFra
         return playlist;
     }
 
-    public ImageButton getPrevButton() {
-        return prevButton;
+
+
+    private BroadcastReceiver btnClickBroadcast = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if(MainFragment.playlist.size() == 1){
+                playAudio(0);
+            }
+        }
+    };
+
+    private void registerBtnClickBroadcast(){
+        IntentFilter intentFilter = new IntentFilter(LibraryFragment.BTN_CLICK_BROADCAST);
+        getActivity().registerReceiver(btnClickBroadcast,intentFilter);
     }
 
-    public void setPrevButton(ImageButton prevButton) {
-        this.prevButton = prevButton;
+    private BroadcastReceiver viewClickBroadcast = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            playAudio(0);
+        }
+    };
+
+    private void registerViewClickBroadcast(){
+        IntentFilter intentFilter = new IntentFilter(LibraryFragment.VIEW_CLICK_BROADCAST);
+        getActivity().registerReceiver(viewClickBroadcast,intentFilter);
     }
 
-    public ImageButton getPlayButton() {
-        return playButton;
+    private void sendStopBroadcast(){
+        Intent intent = new Intent(Broadcast_STOP_PLAYING_FOR_CHANGE);
+        getActivity().sendBroadcast(intent);
     }
 
-    public void setPlayButton(ImageButton playButton) {
-        this.playButton = playButton;
+    private void sendTapUpdateBroadcast(){
+        Intent intent = new Intent(Broadcast_TAPS_UPDATE);
+        getActivity().sendBroadcast(intent);
     }
 
-    public ImageButton getNextButton() {
-        return nextButton;
-    }
+    @Override
+    public void onSongClick(int position) {
+        playAudio(position);
 
-    public void setNextButton(ImageButton nextButton) {
-        this.nextButton = nextButton;
-    }
-
-    public SeekBar getSeekBar() {
-        return seekBar;
-    }
-
-    public void setSeekBar(SeekBar seekBar) {
-        this.seekBar = seekBar;
+        sendTapUpdateBroadcast();
     }
 
     @Override
     public void onBtnClick(int position) {
-        playlist.add(data.get(position));
-        Log.v("TAG","Item Added");
-        playingAdapter.notifyDataSetChanged();
-        if(MainFragment.playlist.size() == 1){
-            playAudio(0);
+        if(playlist.size() == 1){
+            //stop playing
+            sendStopBroadcast();
+            //clear playlist
+            playlist.clear();
+            playingAdapter.notifyDataSetChanged();
+            Log.v("REMOVE BTN","Single element");
+            Log.v("currentPosition",currentFile+"");
+
         }
-    }
 
-    @Override
-    public void onViewClick(int position) {
-        playlist.clear();
-        playlist.add(data.get(position));
-        playingAdapter.notifyDataSetChanged();
-        playAudio(0);
-    }
-
-/*
-    @Override
-    public void onItemBtnClick(int position) {
-        playlist.add(data.get(position));
-        Log.v("TAG","Item Added");
-        playingAdapter.notifyDataSetChanged();
-        if(MainFragment.playlist.size() == 1){
-            playAudio(0);
+        else if(currentFile == position){
+            //remove
+            sendStopBroadcast();
+            playlist.remove(position);
+            playingAdapter.notifyDataSetChanged();
+            //playnextaudio
+            if(position == playlist.size()) {
+                Log.v("REMOVE BTN","Current playing is last element of playlist");
+                Log.v("currentPosition",currentFile+"");
+                currentFile = currentFile -1;
+                storage.storeAudioIndex(currentFile);
+                playAudio(position - 1);
+            }
+            else {
+                playAudio(position);
+                Log.v("REMOVE BTN","Current playing removed");
+                Log.v("currentPosition",currentFile+"");
+            }
         }
+
+        else if(currentFile > position){
+            //remove
+            playlist.remove(position);
+            playingAdapter.notifyDataSetChanged();
+            //audioIndex--
+            currentFile = currentFile-1;
+            storage.storeAudioIndex(currentFile);
+
+            Log.v("REMOVE BTN","Item above current playing removed");
+            Log.v("currentPosition",currentFile+"");
+        }
+
+        sendTapUpdateBroadcast();
     }
 
-    @Override
-    public void onItemViewClick(int position) {
-        playlist.clear();
-        playlist.add(data.get(position));
-        playingAdapter.notifyDataSetChanged();
-        playAudio(0);
-    }*/
+
+
+    private BroadcastReceiver nextPlayingBroadcast = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            currentFile = storage.loadAudioIndex();
+            Log.v("currentPosition",currentFile+"");
+            Intent nextPlayingBroadcastMain = new Intent(Broadcast_SONG_TEXT_CHANGE);
+            getActivity().sendBroadcast(nextPlayingBroadcastMain);
+        }
+    };
+
+    private void registerNextPlayingBroadcast(){
+        IntentFilter intentFilter = new IntentFilter(MediaPlayerService.Broadcast_NEXT_SONG);
+        getActivity().registerReceiver(nextPlayingBroadcast,intentFilter);
+    }
+
+
 }

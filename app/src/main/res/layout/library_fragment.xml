@@ -4,9 +4,11 @@
     android:layout_height="match_parent"
     tools:context="com.veloxigami.myapplication.LibraryFragment">
 
-    <android.support.v7.widget.RecyclerView
+
+    <include
         android:id="@+id/lib_recycler_view"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"></android.support.v7.widget.RecyclerView>
+        android:layout_height="match_parent"
+        layout="@layout/vertical_recyclerview"/>
 
 </FrameLayout>

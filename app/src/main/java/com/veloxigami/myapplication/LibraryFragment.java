@@ -3,6 +3,7 @@ package com.veloxigami.myapplication;
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -35,26 +36,19 @@ public class LibraryFragment extends Fragment implements LibraryAdapter.libraryA
     private GetFiles getFiles;
     private MainFragment mainFragment;
 
+    public final static String BTN_CLICK_BROADCAST = "com.veloxigami.myapplication.itemBtnClick";
+    public final static String VIEW_CLICK_BROADCAST = "com.veloxigami.myapplication.itemViewClick";
+
     public ArrayList<MusicFile> getMusicFiles() {
         return musicFiles;
     }
 
 
-    public interface libraryFragmentInterface {
-        void onBtnClick(int position);
-        void onViewClick(int position);
-    }
-
-    private libraryFragmentInterface fragmentInterface;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mainFragment = new MainFragment();
-    }
-
-    public void setLibraryFragmentInterface(libraryFragmentInterface fragmentInterface){
-        this.fragmentInterface = fragmentInterface;
     }
 
     public LibraryAdapter getLibraryAdapter() {
@@ -80,8 +74,6 @@ public class LibraryFragment extends Fragment implements LibraryAdapter.libraryA
 
         libraryAdapter.setAdapterInterface(this);
 
-        this.setLibraryFragmentInterface((libraryFragmentInterface) new MainFragment().getContext());
-
         libraryRecyclerView.setAdapter(libraryAdapter);
         Log.v("TAG","attached");
 
@@ -90,13 +82,30 @@ public class LibraryFragment extends Fragment implements LibraryAdapter.libraryA
 
     @Override
     public void onItemBtnClick(int position) {
-        fragmentInterface.onBtnClick(position);
+
+        MainFragment.playlist.add(musicFiles.get(position));
+        Log.v("TAG","Item Added");
+        MainFragment.playingAdapter.notifyDataSetChanged();
+
+        Intent itemBtnClickBroadcast = new Intent(BTN_CLICK_BROADCAST);
+//        itemBtnClickBroadcast.putExtra("position",position);
+        getActivity().sendBroadcast(itemBtnClickBroadcast);
+
+//        Log.v("currentPosition",new DataStorage(getActivity()).loadFile().size()+"");
     }
 
     @Override
     public void onItemViewClick(int position) {
-        fragmentInterface.onViewClick(position);
+        MainFragment.playlist.clear();
+        MainFragment.playlist.add(musicFiles.get(position));
+        MainFragment.playingAdapter.notifyDataSetChanged();
+
+       Intent itemViewClickBroadcast = new Intent(VIEW_CLICK_BROADCAST);
+//       itemViewClickBroadcast.putExtra("position",position);
+       getActivity().sendBroadcast(itemViewClickBroadcast);
+ //       Log.v("currentPosition",new DataStorage(getActivity()).loadFile().size()+"");
     }
+
 
     private class GetFiles extends AsyncTask<Void, Void, Void>{
 
@@ -144,9 +153,11 @@ public class LibraryFragment extends Fragment implements LibraryAdapter.libraryA
                 //ArtistName
                 String artistName = cursor.getString(cursor.getColumnIndex(MediaStore.Audio.ArtistColumns.ARTIST));
 
+
+                long durationInMs=0;
                 //Duration
                 if(cursor.getString(cursor.getColumnIndex(MediaStore.Audio.AudioColumns.DURATION)) != null){
-                    long durationInMs = Long.parseLong(cursor
+                     durationInMs = Long.parseLong(cursor
                             .getString(cursor.getColumnIndex(MediaStore.Audio.AudioColumns.DURATION)));
 
                     int durationInMin = ((int) durationInMs/1000) / 60;
@@ -190,19 +201,3 @@ public class LibraryFragment extends Fragment implements LibraryAdapter.libraryA
 }
 
 
-/*
- if(cursor.getString(cursor.getColumnIndex(
-         MediaStore.Audio.AudioColumns.DURATION
-         ))!=null){
-         long durationInMs = Long.parseLong(cursor.getString(
-         cursor.getColumnIndex(MediaStore.Audio.AudioColumns.DURATION)
-         ));
-
-         int durationInMin = ((int) durationInMs / 1000) /60;
-
-         int durationInSec = ((int) durationInMs / 1000) % 60;
-
-         duration.setText(""+ durationInMin+ ":" +String.format("%02d",durationInSec));
-
-         view.setTag(cursor.getString(cursor.getColumnIndex(MediaStore.MediaColumns.DATA)));
-         }*/

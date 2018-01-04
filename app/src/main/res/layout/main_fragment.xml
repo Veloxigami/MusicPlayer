@@ -1,61 +1,175 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:seekarc="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.veloxigami.myapplication.MainFragment">
-
-
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/recyclerview"
+<!--    <android.support.constraint.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="496dp"></android.support.v7.widget.RecyclerView>
+        android:layout_height="wrap_content">
 
-    <RelativeLayout
-
-        android:id="@+id/functions"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/gradient"
-        android:layout_gravity="bottom"
-        android:gravity="center">
-
-        <SeekBar
+        <TextView
+            android:id="@+id/song_display_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:id="@+id/seekbar"
-            android:background="@drawable/gradient"/>
+            android:layout_marginBottom="8dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="8dp"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.396"
+            tools:text="Song Playing" />
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <com.triggertrap.seekarc.SeekArc
+            android:id="@+id/seekArc"
+            android:layout_width="250dp"
+            android:layout_height="250dp"
+            android:layout_alignParentTop="true"
+            android:layout_centerHorizontal="true"
+            android:layout_gravity="center"
+            android:layout_marginTop="0dp"
+            android:paddingBottom="10dp"
+            android:paddingLeft="85dp"
+            android:paddingRight="85dp"
+            android:paddingTop="10dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            seekarc:arcWidth="5dp"
+            seekarc:max="100"
+            seekarc:rotation="180"
+            seekarc:startAngle="38"
+            seekarc:sweepAngle="285"
+            seekarc:touchInside="true" />
 
         <LinearLayout
-            android:layout_below="@+id/seekbar"
             android:id="@+id/buttonsLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_below="@+id/seekArc"
+            android:layout_marginBottom="8dp"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <ImageButton
+                android:id="@+id/prevButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="4dp"
+                android:background="@drawable/gradient"
+                android:src="@android:drawable/ic_media_previous" />
+
+            <ImageButton
+                android:id="@+id/playButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="4dp"
+                android:background="@drawable/gradient"
+                android:src="@android:drawable/ic_media_play" />
+
+            <ImageButton
+                android:id="@+id/nextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/gradient"
+                android:src="@android:drawable/ic_media_next" />
+
+        </LinearLayout>
+
+
+
+
+        <android.support.design.widget.TabLayout
+            android:id="@+id/tabLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentStart="true"
+            android:layout_below="@+id/buttonsLayout"
+            app:tabGravity="fill"
+            app:tabMode="fixed"></android.support.design.widget.TabLayout>
+
+
+        &lt;!&ndash;    <RelativeLayout
+
+        android:id="@+id/functions"
+        android:layout_width="match_parent"
+        android:layout_height="5dp"
+        android:layout_gravity="bottom"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/gradient"
+        android:gravity="center"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="@+id/recyclerview"
+        app:layout_constraintVertical_bias="1.0">
+
+
+        <SeekBar
+            android:id="@+id/seekbar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/gradient" />
+
+        <LinearLayout
+            android:id="@+id/buttonsLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/seekbar"
             android:gravity="center">
 
-        <ImageButton
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_media_previous"
-            android:id="@+id/prevButton"
-            android:background="@drawable/gradient"
-            android:layout_marginRight="4dp"/>
+            <ImageButton
+                android:id="@+id/prevButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="4dp"
+                android:background="@drawable/gradient"
+                android:src="@android:drawable/ic_media_previous" />
 
-        <ImageButton
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_media_play"
-            android:id="@+id/playButton"
-            android:background="@drawable/gradient"
-            android:layout_marginRight="4dp"/>
+            <ImageButton
+                android:id="@+id/playButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="4dp"
+                android:background="@drawable/gradient"
+                android:src="@android:drawable/ic_media_play" />
 
-        <ImageButton
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@android:drawable/ic_media_next"
-            android:id="@+id/nextButton"
-            android:background="@drawable/gradient"/>
+            <ImageButton
+                android:id="@+id/nextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/gradient"
+                android:src="@android:drawable/ic_media_next"/>
 
         </LinearLayout>
     </RelativeLayout>
+&ndash;&gt;
+    </RelativeLayout>
 
+    </android.support.constraint.ConstraintLayout>-->
+    <include
+        android:id="@+id/recyclerview"
+        layout="@layout/vertical_recyclerview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_margin="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 </FrameLayout>

@@ -8,11 +8,15 @@ import android.content.IntentFilter;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.widget.Toast;
+
+import com.triggertrap.seekarc.SeekArc;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,6 +39,10 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     private boolean ongoingCall = false;
     private PhoneStateListener phoneStateListener;
     private TelephonyManager telephonyManager;
+
+    public static final String Broadcast_NEXT_SONG = "com.veloxigami.myapplication.nextsongupdate";
+
+    private final Handler handler = new Handler();
 
     private void callStateListener(){
         telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
@@ -82,66 +90,13 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
         try{
             mediaPlayer.setDataSource(currentMedia.getData());
+            MainActivity.seekArc.setMax(mediaPlayer.getDuration());
+            MainActivity.seekArc.setOnSeekArcChangeListener(seekArcChangeListener);
         } catch (IOException e) {
             e.printStackTrace();
             stopSelf();
         }
-
         mediaPlayer.prepareAsync();
-    }
-
-    public MediaPlayer getMediaPlayer() {
-        return mediaPlayer;
-    }
-
-    public void playMedia(){
-        if (!mediaPlayer.isPlaying()){
-            mediaPlayer.start();
-        }
-    }
-
-    public void pauseMedia(){
-        if(mediaPlayer.isPlaying()){
-            mediaPlayer.pause();
-            resume = mediaPlayer.getCurrentPosition();
-        }
-    }
-
-    public void stopMedia(){
-        if (mediaPlayer == null) return;
-        if(mediaPlayer.isPlaying()){
-            mediaPlayer.stop();
-        }
-    }
-
-    public void resumeMedia(){
-        if(!mediaPlayer.isPlaying()){
-            mediaPlayer.seekTo(resume);
-            mediaPlayer.start();
-        }
-    }
-
-    private BroadcastReceiver playNewAudio = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            currentFileIndex = new DataStorage(getApplicationContext()).loadAudioIndex();
-            if(currentFileIndex != -1 && currentFileIndex < playList.size()){
-                currentMedia = playList.get(currentFileIndex);
-            }else {
-                stopSelf();
-            }
-
-            stopMedia();
-            mediaPlayer.reset();
-            initMediaPlayer();
-            /*updateMetaData();
-            buildNotification(PlaybackStatus.PLAYING);*/
-        }
-    };
-
-    private void register_playNewAudio(){
-        IntentFilter filter = new IntentFilter(MainFragment.Broadcast_PLAY_NEW_AUDIO);
-        registerReceiver(playNewAudio,filter);
     }
 
     @Override
@@ -153,6 +108,12 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         registerAudioOutputChange();
 
         register_playNewAudio();
+
+        registerStopMediaBroadcast();
+
+        registerUpdatePlaylistReceiver();
+
+        registerControlButtonsBroadcast();
     }
 
     @Override
@@ -196,18 +157,17 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         new DataStorage(getApplicationContext()).clearCachedAudioPlaylist();
     }
 
-    private BroadcastReceiver audioOutputChange = new BroadcastReceiver() {
+    private final Runnable updatePositionRunnable = new Runnable() {
         @Override
-        public void onReceive(Context context, Intent intent) {
-            pauseMedia();
-//            buildNotification(PlaybackStatus.PAUSED);
+        public void run() {
+            MainActivity.seekArc.setProgress(mediaPlayer.getCurrentPosition());
         }
     };
 
-    private void registerAudioOutputChange(){
-        IntentFilter intentFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
-        registerReceiver(audioOutputChange, intentFilter);
+    public void updateSeekArc(){
+        handler.postDelayed(updatePositionRunnable,400);
     }
+
 
     @Nullable
     @Override
@@ -250,6 +210,28 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         }
     }
 
+    private SeekArc.OnSeekArcChangeListener seekArcChangeListener = new SeekArc.OnSeekArcChangeListener() {
+        @Override
+        public void onProgressChanged(SeekArc seekArc, int progress, boolean fromUser) {
+
+        }
+
+        @Override
+        public void onStartTrackingTouch(SeekArc seekArc) {
+            handler.removeCallbacks(updatePositionRunnable);
+        }
+
+        @Override
+        public void onStopTrackingTouch(SeekArc seekArc) {
+            handler.removeCallbacks(updatePositionRunnable);
+            int totalDuration = mediaPlayer.getDuration();
+            int currentPosition = seekArc.getProgress();
+
+            mediaPlayer.seekTo(currentPosition);
+            updateSeekArc();
+        }
+    };
+
     private boolean requestAudioFocus(){
 
         audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
@@ -273,9 +255,30 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     @Override
     public void onCompletion(MediaPlayer mp) {
 
-        stopMedia();
+        currentFileIndex = new DataStorage(getApplicationContext()).loadAudioIndex();
 
-        stopSelf();
+        if(currentFileIndex < playList.size()){
+            currentFileIndex = ++currentFileIndex;
+            if(currentFileIndex != -1 && currentFileIndex < playList.size()){
+                currentMedia = playList.get(currentFileIndex);
+                new DataStorage(getApplicationContext()).storeAudioIndex(currentFileIndex);
+                Intent nextPlaying = new Intent(Broadcast_NEXT_SONG);
+                sendBroadcast(nextPlaying);
+            }else {
+                stopSelf();
+            }
+
+            stopMedia();
+            mediaPlayer.stop();
+            mediaPlayer.reset();
+            initMediaPlayer();
+        }
+        else{
+            stopMedia();
+
+            stopSelf();
+        }
+
 
     }
 
@@ -315,4 +318,186 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             return MediaPlayerService.this;
         }
     }
+
+    /**
+     * play,stop,resume,pause
+     */
+    public void playMedia(){
+        if (!mediaPlayer.isPlaying()){
+            mediaPlayer.start();
+
+
+            Intent pause = new Intent("com.veloxigami.myapplication.play");
+            sendBroadcast(pause);
+        }
+    }
+
+    public void pauseMedia(){
+        if(mediaPlayer.isPlaying()){
+            mediaPlayer.pause();
+            resume = mediaPlayer.getCurrentPosition();
+
+            Intent pause = new Intent("com.veloxigami.myapplication.pause");
+            sendBroadcast(pause);
+        }
+    }
+
+    public void stopMedia(){
+        if (mediaPlayer == null) return;
+        if(mediaPlayer.isPlaying()){
+            mediaPlayer.stop();
+        }
+    }
+
+    public void resumeMedia(){
+        if(!mediaPlayer.isPlaying()){
+            mediaPlayer.seekTo(resume);
+            mediaPlayer.start();
+        }
+    }
+
+
+    /*************
+     *
+     *  BROADCAST RECEIVERS and OTHER INTERACTION SECTION BELOW
+     *
+     * **********/
+
+    /**
+     * play newfile in mediaplayer broadcast receiver
+     */
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    private BroadcastReceiver playNewAudio = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            currentFileIndex = new DataStorage(getApplicationContext()).loadAudioIndex();
+            if(currentFileIndex != -1 && currentFileIndex < playList.size()){
+                currentMedia = playList.get(currentFileIndex);
+            }else {
+                stopSelf();
+            }
+
+            stopMedia();
+            mediaPlayer.stop();
+            mediaPlayer.reset();
+            initMediaPlayer();
+            /*updateMetaData();
+            buildNotification(PlaybackStatus.PLAYING);*/
+        }
+    };
+
+
+    private void register_playNewAudio(){
+        IntentFilter filter = new IntentFilter(MainFragment.Broadcast_PLAY_NEW_AUDIO);
+        registerReceiver(playNewAudio,filter);
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * audio output change broadcast receiver
+     */
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    private BroadcastReceiver audioOutputChange = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            pauseMedia();
+//            buildNotification(PlaybackStatus.PAUSED);
+        }
+    };
+
+    private void registerAudioOutputChange(){
+        IntentFilter intentFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
+        registerReceiver(audioOutputChange, intentFilter);
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * stop mediaplayer broadcast
+     */
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    private BroadcastReceiver stopMediaBroadcast = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            stopMedia();
+        }
+    };
+
+    private void registerStopMediaBroadcast(){
+        IntentFilter intentFilter = new IntentFilter(MainFragment.Broadcast_STOP_PLAYING_FOR_CHANGE);
+        registerReceiver(stopMediaBroadcast,intentFilter);
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * control buttons broadcast recievers
+     */
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    private BroadcastReceiver playButtonBroadcast = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if(!mediaPlayer.isPlaying()){
+                playMedia();
+            }
+            else{
+                pauseMedia();
+            }
+        }
+    };
+
+    private BroadcastReceiver prevButtonBroadcast = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if(currentFileIndex != 0 && currentFileIndex < playList.size()){
+                currentMedia = playList.get(currentFileIndex-1);
+                stopMedia();
+                playMedia();
+            }else{
+                Toast.makeText(getApplicationContext(),"First song playing!",Toast.LENGTH_SHORT).show();
+            }
+        }
+    };
+
+    private BroadcastReceiver nextButtonBroadcast = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            stopMedia();
+            if(currentFileIndex != -1 && currentFileIndex < playList.size()-1){
+                currentMedia = playList.get(currentFileIndex);
+            }
+        }
+    };
+
+    private void registerControlButtonsBroadcast(){
+        IntentFilter play = new IntentFilter(MainActivity.PLAY_PAUSE_BUTTON_PRESSED);
+        IntentFilter prev = new IntentFilter(MainActivity.PREV_BUTTON_PRESSED);
+        IntentFilter next = new IntentFilter(MainActivity.NEXT_BUTTON_PRESSED);
+        registerReceiver(playButtonBroadcast,play);
+        registerReceiver(prevButtonBroadcast,prev);
+        registerReceiver(nextButtonBroadcast,next);
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * LibraryFragment update playlist
+     */
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    private BroadcastReceiver updatePlaylistReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            playList = MainFragment.playlist;
+        }
+    };
+
+    private void registerUpdatePlaylistReceiver(){
+        IntentFilter libViewUpdate = new IntentFilter(LibraryFragment.VIEW_CLICK_BROADCAST);
+        IntentFilter libBtnUpdate = new IntentFilter(LibraryFragment.BTN_CLICK_BROADCAST);
+        IntentFilter mainFragViewUpdate = new IntentFilter(MainFragment.Broadcast_TAPS_UPDATE);
+        IntentFilter mainFragBtnUpdate = new IntentFilter(MainFragment.Broadcast_TAPS_UPDATE);
+        registerReceiver(updatePlaylistReceiver,libViewUpdate);
+        registerReceiver(updatePlaylistReceiver,libBtnUpdate);
+        registerReceiver(updatePlaylistReceiver,mainFragViewUpdate);
+        registerReceiver(updatePlaylistReceiver,mainFragBtnUpdate);
+
+    }
+    ////////////////////////////////////////////////////////////////////////////////////////////////
 }
