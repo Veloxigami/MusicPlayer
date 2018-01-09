@@ -86,6 +86,7 @@ public class LibraryFragment extends Fragment implements LibraryAdapter.libraryA
         MainFragment.playlist.add(musicFiles.get(position));
         Log.v("TAG","Item Added");
         MainFragment.playingAdapter.notifyDataSetChanged();
+        new DataStorage(getActivity()).storeAudio(MainFragment.playlist);
 
         Intent itemBtnClickBroadcast = new Intent(BTN_CLICK_BROADCAST);
 //        itemBtnClickBroadcast.putExtra("position",position);
@@ -99,6 +100,7 @@ public class LibraryFragment extends Fragment implements LibraryAdapter.libraryA
         MainFragment.playlist.clear();
         MainFragment.playlist.add(musicFiles.get(position));
         MainFragment.playingAdapter.notifyDataSetChanged();
+        new DataStorage(getActivity()).storeAudio(MainFragment.playlist);
 
        Intent itemViewClickBroadcast = new Intent(VIEW_CLICK_BROADCAST);
 //       itemViewClickBroadcast.putExtra("position",position);

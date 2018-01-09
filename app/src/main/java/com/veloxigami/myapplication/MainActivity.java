@@ -141,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void registerPlayPauseBroadcast(){
-        IntentFilter nowplaying = new IntentFilter("com.veloxigami.myapplication.playingbroadcast");
+        IntentFilter nowplaying = new IntentFilter(MainFragment.Broadcast_PLAY_BTN_CHANGE);
         IntentFilter play = new IntentFilter("com.veloxigami.myapplication.play");
         IntentFilter pause = new IntentFilter("com.veloxigami.myapplication.pause");
         registerReceiver(playBroadcastReceiver,play);

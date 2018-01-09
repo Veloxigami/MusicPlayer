@@ -41,6 +41,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     private TelephonyManager telephonyManager;
 
     public static final String Broadcast_NEXT_SONG = "com.veloxigami.myapplication.nextsongupdate";
+    public static final String Broadcast_PREV_SONG = "com.veloxigami.myapplication.prevsongupdate";
 
     private final Handler handler = new Handler();
 
@@ -90,8 +91,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
         try{
             mediaPlayer.setDataSource(currentMedia.getData());
-            MainActivity.seekArc.setMax(mediaPlayer.getDuration());
-            MainActivity.seekArc.setOnSeekArcChangeListener(seekArcChangeListener);
+            currentFileIndex = new DataStorage(getApplicationContext()).loadAudioIndex();
         } catch (IOException e) {
             e.printStackTrace();
             stopSelf();
@@ -129,9 +129,9 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         if(requestAudioFocus() == false)
             stopSelf();
 
-        if (currentMedia.getData() != null && currentMedia.getData() !="")
+        if (currentMedia.getData() != null && currentMedia.getData() !="") {
             initMediaPlayer();
-
+        }
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -213,7 +213,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     private SeekArc.OnSeekArcChangeListener seekArcChangeListener = new SeekArc.OnSeekArcChangeListener() {
         @Override
         public void onProgressChanged(SeekArc seekArc, int progress, boolean fromUser) {
-
+            updateSeekArc();
         }
 
         @Override
@@ -306,6 +306,10 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     @Override
     public void onPrepared(MediaPlayer mp) {
         playMedia();
+
+        MainActivity.seekArc.setMax(mediaPlayer.getDuration());
+        updateSeekArc();
+        MainActivity.seekArc.setOnSeekArcChangeListener(seekArcChangeListener);
     }
 
     @Override
@@ -449,8 +453,11 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         public void onReceive(Context context, Intent intent) {
             if(currentFileIndex != 0 && currentFileIndex < playList.size()){
                 currentMedia = playList.get(currentFileIndex-1);
+                new DataStorage(getApplicationContext()).storeAudioIndex(currentFileIndex-1);
                 stopMedia();
                 playMedia();
+                Intent prevPlaying = new Intent(Broadcast_PREV_SONG);
+                sendBroadcast(prevPlaying);
             }else{
                 Toast.makeText(getApplicationContext(),"First song playing!",Toast.LENGTH_SHORT).show();
             }
@@ -460,9 +467,16 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     private BroadcastReceiver nextButtonBroadcast = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            stopMedia();
             if(currentFileIndex != -1 && currentFileIndex < playList.size()-1){
-                currentMedia = playList.get(currentFileIndex);
+                currentMedia = playList.get(currentFileIndex+1);
+                new DataStorage(getApplicationContext()).storeAudioIndex(currentFileIndex+1);
+                stopMedia();
+                playMedia();
+                Intent nextPlaying = new Intent(Broadcast_NEXT_SONG);
+                sendBroadcast(nextPlaying);
+            }
+            else {
+                Toast.makeText(getApplicationContext(),"Last song playing!",Toast.LENGTH_SHORT).show();
             }
         }
     };
