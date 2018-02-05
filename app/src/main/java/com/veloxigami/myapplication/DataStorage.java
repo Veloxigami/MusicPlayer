@@ -87,6 +87,6 @@ public class DataStorage {
         SharedPreferences.Editor editor = preferences.edit();
         editor.remove("audioArrayList");
         editor.remove("audioIndex");
-        editor.commit();
+        editor.apply();
     }
 }

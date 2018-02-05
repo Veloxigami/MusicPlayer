@@ -68,7 +68,7 @@ public class LibraryFragment extends Fragment implements LibraryAdapter.libraryA
 
         libraryRecyclerView.setLayoutManager(layoutManager);
 
-        new GetFiles().execute();
+
 
         libraryAdapter = new LibraryAdapter(musicFiles, getActivity());
 
@@ -76,7 +76,7 @@ public class LibraryFragment extends Fragment implements LibraryAdapter.libraryA
 
         libraryRecyclerView.setAdapter(libraryAdapter);
         Log.v("TAG","attached");
-
+        new GetFiles().execute();
         return rootView;
     }
 

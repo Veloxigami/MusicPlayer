@@ -36,9 +36,9 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
     public static ArrayList<MusicFile> playlist = new ArrayList<>();
     public static MediaPlayerService playerService;
     public static boolean serviceBound = false;
-    private DataStorage storage;
+    //private DataStorage storage;
     private ArrayList<MusicFile> data = new ArrayList<>();
-    private int currentFile;
+    public static int currentFile;
 
     public static final String Broadcast_PLAY_NEW_AUDIO = "com.veloxigami.myapplication.playnewaudio";
     public final static String Broadcast_PLAY_BTN_CHANGE = "com.veloxigami.myapplication.playbuttonchange";
@@ -65,7 +65,7 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
             playlist = new DataStorage(getActivity()).loadPlaylist("lastplayed");
         }*/
         recyclerView = (RecyclerView) rootView.findViewById(R.id.recyclerview);
-        storage = new DataStorage(getActivity());
+        //storage = new DataStorage(getActivity());
 
         manager = new LinearLayoutManager(getActivity());
         recyclerView.setLayoutManager(manager);
@@ -95,11 +95,12 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
 
 
     public void playAudio(int audioIndex) {
-        if (!serviceBound) {
+            currentFile = audioIndex;
+            if (!serviceBound) {
 
             // storage = new DataStorage(getActivity());
-            storage.storeAudio(playlist);
-            storage.storeAudioIndex(audioIndex);
+           /* storage.storeAudio(playlist);
+            storage.storeAudioIndex(audioIndex);*/
             serviceBound = true;
             Log.v("TAG", "Creating new instance");
             Intent playerIntent = new Intent(getActivity(), MediaPlayerService.class);
@@ -108,16 +109,19 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
         } else {
 
             //storage = new DataStorage(getActivity());
-            storage.storeAudio(playlist);
-            storage.storeAudioIndex(audioIndex);
+            /*storage.storeAudio(playlist);
+            storage.storeAudioIndex(audioIndex);*/
 
             Intent broadcastIntent = new Intent(Broadcast_PLAY_NEW_AUDIO);
             Log.v("TAG", "Broadcasting");
             getActivity().sendBroadcast(broadcastIntent);
         }
-        currentFile = new DataStorage(getActivity()).loadAudioIndex();
+
+
+
         Intent playingBroadcast = new Intent(Broadcast_PLAY_BTN_CHANGE);
         getActivity().sendBroadcast(playingBroadcast);
+
         Intent nextPlayingBroadcastMain = new Intent(Broadcast_SONG_TEXT_CHANGE);
         getActivity().sendBroadcast(nextPlayingBroadcastMain);
     }
@@ -125,10 +129,6 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
 
     public void saveCurrentPlaying(ArrayList<MusicFile> list, String title) {
         new DataStorage(getActivity()).savePlaylist(title, list);
-    }
-
-    public ArrayList<MusicFile> getPlaylist() {
-        return playlist;
     }
 
 
@@ -182,6 +182,7 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
             sendStopBroadcast();
             //clear playlist
             playlist.clear();
+            //storage.clearCachedAudioPlaylist();
             playingAdapter.notifyDataSetChanged();
             Log.v("REMOVE BTN", "Single element");
             Log.v("currentPosition", currentFile + "");
@@ -196,7 +197,7 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
                 Log.v("REMOVE BTN", "Current playing is last element of playlist");
                 Log.v("currentPosition", currentFile + "");
                 currentFile = currentFile - 1;
-                storage.storeAudioIndex(currentFile);
+                //storage.storeAudioIndex(currentFile);
                 playAudio(position - 1);
             } else {
                 playAudio(position);
@@ -209,7 +210,7 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
             playingAdapter.notifyDataSetChanged();
             //audioIndex--
             currentFile = currentFile - 1;
-            storage.storeAudioIndex(currentFile);
+            //storage.storeAudioIndex(currentFile);
 
             Log.v("REMOVE BTN", "Item above current playing removed");
             Log.v("currentPosition", currentFile + "");
@@ -222,7 +223,7 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
     private BroadcastReceiver nextPlayingBroadcast = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            currentFile = storage.loadAudioIndex();
+           // currentFile = storage.loadAudioIndex();
             Log.v("currentPosition", currentFile + "");
             Intent nextPlayingBroadcastMain = new Intent(Broadcast_SONG_TEXT_CHANGE);
             getActivity().sendBroadcast(nextPlayingBroadcastMain);
@@ -232,7 +233,7 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
     private BroadcastReceiver prevPlayingBroadcast = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            currentFile = storage.loadAudioIndex();
+         //   currentFile = storage.loadAudioIndex();
             Log.v("currentPosition", currentFile + "");
             Intent prevPlayingBroadcastMain = new Intent(Broadcast_SONG_TEXT_CHANGE);
             getActivity().sendBroadcast(prevPlayingBroadcastMain);
@@ -247,8 +248,16 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
         getActivity().registerReceiver(prevPlayingBroadcast,intentFilter2);
     }
 
+    @Override
+    public void onStop() {
+        super.onStop();
+        getActivity().unregisterReceiver(prevPlayingBroadcast);
+        getActivity().unregisterReceiver(nextPlayingBroadcast);
+        getActivity().unregisterReceiver(viewClickBroadcast);
+        getActivity().unregisterReceiver(btnClickBroadcast);
+    }
 
-/*
+    /*
     private BroadcastReceiver prevBtnClickedReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {

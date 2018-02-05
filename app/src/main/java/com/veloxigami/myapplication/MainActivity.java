@@ -12,6 +12,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageButton;
+import android.widget.SeekBar;
 import android.widget.TextView;
 
 import com.triggertrap.seekarc.SeekArc;
@@ -25,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
     private ImageButton prevButton, playButton,nextButton;
     public static SeekArc seekArc;
     private TextView songText;
-    private DataStorage dataStorage;
+    //private DataStorage dataStorage;
 
     public final static String PLAY_PAUSE_BUTTON_PRESSED = "com.veloxigami.myapplication.playpausebtnpressed";
     public final static String PREV_BUTTON_PRESSED = "com.veloxigami.myapplication.prevbtnpressed";
@@ -44,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         seekArc = (SeekArc) findViewById(R.id.seekArc);
         songText = (TextView) findViewById(R.id.song_display_text);
 
-        dataStorage = new DataStorage(this);
+        //dataStorage = new DataStorage(this);
 
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -131,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver songTextChangeReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            songText.setText(dataStorage.loadFile().get(dataStorage.loadAudioIndex()).getSongName());
+            songText.setText(MainFragment.playlist.get(MainFragment.currentFile).getSongName());
         }
     };
 
@@ -142,10 +143,19 @@ public class MainActivity extends AppCompatActivity {
 
     private void registerPlayPauseBroadcast(){
         IntentFilter nowplaying = new IntentFilter(MainFragment.Broadcast_PLAY_BTN_CHANGE);
-        IntentFilter play = new IntentFilter("com.veloxigami.myapplication.play");
-        IntentFilter pause = new IntentFilter("com.veloxigami.myapplication.pause");
+        IntentFilter play = new IntentFilter(MediaPlayerService.Broadcast_PLAY_SONG);
+        IntentFilter pause = new IntentFilter(MediaPlayerService.Broadcast_PAUSE_SONG);
         registerReceiver(playBroadcastReceiver,play);
         registerReceiver(playingBroadcastReceiver,nowplaying);
         registerReceiver(pauseBroadcastReceiver,pause);
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        unregisterReceiver(songTextChangeReceiver);
+        unregisterReceiver(pauseBroadcastReceiver);
+        unregisterReceiver(playBroadcastReceiver);
+        unregisterReceiver(playingBroadcastReceiver);
     }
 }

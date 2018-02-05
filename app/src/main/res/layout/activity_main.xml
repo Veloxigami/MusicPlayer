@@ -47,6 +47,23 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
+            <!--<SeekBar
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:id="@+id/seekArc"
+                android:layout_alignParentTop="true"
+                android:layout_centerHorizontal="true"
+                android:layout_gravity="center"
+                android:layout_marginTop="0dp"
+                android:paddingBottom="10dp"
+                android:paddingLeft="85dp"
+                android:paddingRight="85dp"
+                android:paddingTop="10dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"/>-->
+
             <com.triggertrap.seekarc.SeekArc
                 android:id="@+id/seekArc"
                 android:layout_width="250dp"

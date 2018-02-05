@@ -14,6 +14,7 @@ import android.support.annotation.Nullable;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
 import com.triggertrap.seekarc.SeekArc;
@@ -42,6 +43,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     public static final String Broadcast_NEXT_SONG = "com.veloxigami.myapplication.nextsongupdate";
     public static final String Broadcast_PREV_SONG = "com.veloxigami.myapplication.prevsongupdate";
+    public static final String Broadcast_PLAY_SONG = "com.veloxigami.myapplication.play";
+    public static final String Broadcast_PAUSE_SONG = "com.veloxigami.myapplication.pause";
 
     private final Handler handler = new Handler();
 
@@ -84,14 +87,13 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
         mediaPlayer.reset();
 
-        playList = new ArrayList<>();
-        playList = MainFragment.playlist;
+
 
         mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
 
         try{
             mediaPlayer.setDataSource(currentMedia.getData());
-            currentFileIndex = new DataStorage(getApplicationContext()).loadAudioIndex();
+            currentFileIndex = MainFragment.currentFile;
         } catch (IOException e) {
             e.printStackTrace();
             stopSelf();
@@ -113,14 +115,20 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
         registerUpdatePlaylistReceiver();
 
-        registerControlButtonsBroadcast();
+        registerPlayButtonBroadcast();
+
+        registerPrevButtonBroadcast();
+
+        registerNextButtonBroadcast();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
         try{
-            currentMedia = MainFragment.playlist.get(new DataStorage(getApplicationContext()).loadAudioIndex());
+            playList = new ArrayList<>();
+            playList = MainFragment.playlist;
+            currentMedia = MainFragment.playlist.get(MainFragment.currentFile);
         }catch (NullPointerException e){
             e.printStackTrace();
             stopSelf();
@@ -153,8 +161,13 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
         unregisterReceiver(audioOutputChange);
         unregisterReceiver(playNewAudio);
+        unregisterReceiver(stopMediaBroadcast);
+        unregisterReceiver(updatePlaylistReceiver);
+        unregisterReceiver(playButtonBroadcast);
+        unregisterReceiver(prevButtonBroadcast);
+        unregisterReceiver(nextButtonBroadcast);
 
-        new DataStorage(getApplicationContext()).clearCachedAudioPlaylist();
+        //new DataStorage(getApplicationContext()).clearCachedAudioPlaylist();
     }
 
     private final Runnable updatePositionRunnable = new Runnable() {
@@ -224,13 +237,35 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         @Override
         public void onStopTrackingTouch(SeekArc seekArc) {
             handler.removeCallbacks(updatePositionRunnable);
-            int totalDuration = mediaPlayer.getDuration();
+            //int totalDuration = mediaPlayer.getDuration();
             int currentPosition = seekArc.getProgress();
 
             mediaPlayer.seekTo(currentPosition);
             updateSeekArc();
         }
     };
+
+    /*private SeekBar.OnSeekBarChangeListener seekBarChangeListener = new SeekBar.OnSeekBarChangeListener() {
+        @Override
+        public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+            updateSeekArc();
+        }
+
+        @Override
+        public void onStartTrackingTouch(SeekBar seekBar) {
+            handler.removeCallbacks(updatePositionRunnable);
+        }
+
+        @Override
+        public void onStopTrackingTouch(SeekBar seekBar) {
+            handler.removeCallbacks(updatePositionRunnable);
+            //int totalDuration = mediaPlayer.getDuration();
+            int currentPosition = seekBar.getProgress();
+
+            mediaPlayer.seekTo(currentPosition);
+            updateSeekArc();
+        }
+    };*/
 
     private boolean requestAudioFocus(){
 
@@ -255,13 +290,14 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     @Override
     public void onCompletion(MediaPlayer mp) {
 
-        currentFileIndex = new DataStorage(getApplicationContext()).loadAudioIndex();
+        currentFileIndex = MainFragment.currentFile;
 
         if(currentFileIndex < playList.size()){
             currentFileIndex = ++currentFileIndex;
             if(currentFileIndex != -1 && currentFileIndex < playList.size()){
                 currentMedia = playList.get(currentFileIndex);
-                new DataStorage(getApplicationContext()).storeAudioIndex(currentFileIndex);
+                //new DataStorage(getApplicationContext()).storeAudioIndex(currentFileIndex);
+                MainFragment.currentFile = currentFileIndex;
                 Intent nextPlaying = new Intent(Broadcast_NEXT_SONG);
                 sendBroadcast(nextPlaying);
             }else {
@@ -331,7 +367,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             mediaPlayer.start();
 
 
-            Intent pause = new Intent("com.veloxigami.myapplication.play");
+            Intent pause = new Intent(Broadcast_PLAY_SONG);
             sendBroadcast(pause);
         }
     }
@@ -341,7 +377,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
             mediaPlayer.pause();
             resume = mediaPlayer.getCurrentPosition();
 
-            Intent pause = new Intent("com.veloxigami.myapplication.pause");
+            Intent pause = new Intent(Broadcast_PAUSE_SONG);
             sendBroadcast(pause);
         }
     }
@@ -374,7 +410,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     private BroadcastReceiver playNewAudio = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            currentFileIndex = new DataStorage(getApplicationContext()).loadAudioIndex();
+            currentFileIndex = MainFragment.currentFile;
             if(currentFileIndex != -1 && currentFileIndex < playList.size()){
                 currentMedia = playList.get(currentFileIndex);
             }else {
@@ -453,7 +489,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         public void onReceive(Context context, Intent intent) {
             if(currentFileIndex != 0 && currentFileIndex < playList.size()){
                 currentMedia = playList.get(currentFileIndex-1);
-                new DataStorage(getApplicationContext()).storeAudioIndex(currentFileIndex-1);
+                //new DataStorage(getApplicationContext()).storeAudioIndex(currentFileIndex-1);
+                MainFragment.currentFile = currentFileIndex -1;
                 stopMedia();
                 playMedia();
                 Intent prevPlaying = new Intent(Broadcast_PREV_SONG);
@@ -469,7 +506,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         public void onReceive(Context context, Intent intent) {
             if(currentFileIndex != -1 && currentFileIndex < playList.size()-1){
                 currentMedia = playList.get(currentFileIndex+1);
-                new DataStorage(getApplicationContext()).storeAudioIndex(currentFileIndex+1);
+                //new DataStorage(getApplicationContext()).storeAudioIndex(currentFileIndex+1);
+                MainFragment.currentFile = currentFileIndex + 1;
                 stopMedia();
                 playMedia();
                 Intent nextPlaying = new Intent(Broadcast_NEXT_SONG);
@@ -481,12 +519,18 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         }
     };
 
-    private void registerControlButtonsBroadcast(){
+    private void registerPlayButtonBroadcast(){
         IntentFilter play = new IntentFilter(MainActivity.PLAY_PAUSE_BUTTON_PRESSED);
-        IntentFilter prev = new IntentFilter(MainActivity.PREV_BUTTON_PRESSED);
-        IntentFilter next = new IntentFilter(MainActivity.NEXT_BUTTON_PRESSED);
         registerReceiver(playButtonBroadcast,play);
+    }
+
+    private void registerPrevButtonBroadcast(){
+        IntentFilter prev = new IntentFilter(MainActivity.PREV_BUTTON_PRESSED);
         registerReceiver(prevButtonBroadcast,prev);
+    }
+
+    private void registerNextButtonBroadcast(){
+        IntentFilter next = new IntentFilter(MainActivity.NEXT_BUTTON_PRESSED);
         registerReceiver(nextButtonBroadcast,next);
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////
