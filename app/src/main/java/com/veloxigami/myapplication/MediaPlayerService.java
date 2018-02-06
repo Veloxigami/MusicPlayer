@@ -488,11 +488,11 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         @Override
         public void onReceive(Context context, Intent intent) {
             if(currentFileIndex != 0 && currentFileIndex < playList.size()){
-                currentMedia = playList.get(currentFileIndex-1);
+                currentMedia = MainFragment.playlist.get(currentFileIndex-1);
                 //new DataStorage(getApplicationContext()).storeAudioIndex(currentFileIndex-1);
                 MainFragment.currentFile = currentFileIndex -1;
                 stopMedia();
-                playMedia();
+                initMediaPlayer();
                 Intent prevPlaying = new Intent(Broadcast_PREV_SONG);
                 sendBroadcast(prevPlaying);
             }else{
@@ -505,11 +505,11 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         @Override
         public void onReceive(Context context, Intent intent) {
             if(currentFileIndex != -1 && currentFileIndex < playList.size()-1){
-                currentMedia = playList.get(currentFileIndex+1);
+                currentMedia = MainFragment.playlist.get(currentFileIndex+1);
                 //new DataStorage(getApplicationContext()).storeAudioIndex(currentFileIndex+1);
                 MainFragment.currentFile = currentFileIndex + 1;
                 stopMedia();
-                playMedia();
+                initMediaPlayer();
                 Intent nextPlaying = new Intent(Broadcast_NEXT_SONG);
                 sendBroadcast(nextPlaying);
             }

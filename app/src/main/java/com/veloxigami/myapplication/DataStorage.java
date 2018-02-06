@@ -2,6 +2,8 @@ package com.veloxigami.myapplication;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 import com.google.gson.Gson;
@@ -14,15 +16,25 @@ import java.util.ArrayList;
  * Created by Anil on 24-12-2017.
  */
 
-public class DataStorage {
+public class DataStorage extends SQLiteOpenHelper{
 
     private final String STORAGE = "com.veloxigami.myapplication.STORAGE";
     private SharedPreferences preferences;
+    public static final int DATABASE_VERSION = 1;
+    public static final String DATABASE_NAME = "VeloxMusic.db";
+    private static final String TABLE_NAME = "dataentry";
+//    private static final String COLUMN_NAME_DATA
     private Context context;
 
-    public DataStorage(Context context){
-        this.context = context;
+//    private static final String SQL_CREATE_ENTRIES = "CREATE TABLE" +
+
+    public DataStorage(Context context, String name, SQLiteDatabase.CursorFactory factory, int version) {
+        super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
+
+    /*public DataStorage(Context context){
+        this.context = context;
+    }*/
 
     public void storeAudio(ArrayList<MusicFile> arrayList){
         if(context == null) {
@@ -88,5 +100,16 @@ public class DataStorage {
         editor.remove("audioArrayList");
         editor.remove("audioIndex");
         editor.apply();
+    }
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+//        db.execSQL(SQL_CREATE_ENTRIES);
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+      //  db.execSQL(SQL_DELETE_ENTRIES);
+        onCreate(db);
     }
 }

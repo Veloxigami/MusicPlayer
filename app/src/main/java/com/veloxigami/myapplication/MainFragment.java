@@ -128,7 +128,7 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
 
 
     public void saveCurrentPlaying(ArrayList<MusicFile> list, String title) {
-        new DataStorage(getActivity()).savePlaylist(title, list);
+        //new DataStorage(getActivity()).savePlaylist(title, list);
     }
 
 
