@@ -215,7 +215,7 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
             Log.v("REMOVE BTN", "Item above current playing removed");
             Log.v("currentPosition", currentFile + "");
         }
-
+        Toast.makeText(getActivity(),""+MainFragment.playlist.size(),Toast.LENGTH_SHORT).show();
         sendTapUpdateBroadcast();
     }
 

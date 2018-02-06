@@ -18,6 +18,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -92,6 +93,8 @@ public class LibraryFragment extends Fragment implements LibraryAdapter.libraryA
 //        itemBtnClickBroadcast.putExtra("position",position);
         getActivity().sendBroadcast(itemBtnClickBroadcast);
 
+        Toast.makeText(getActivity(),""+MainFragment.playlist.size(),Toast.LENGTH_SHORT).show();
+
 //        Log.v("currentPosition",new DataStorage(getActivity()).loadFile().size()+"");
     }
 
@@ -106,6 +109,7 @@ public class LibraryFragment extends Fragment implements LibraryAdapter.libraryA
 //       itemViewClickBroadcast.putExtra("position",position);
        getActivity().sendBroadcast(itemViewClickBroadcast);
  //       Log.v("currentPosition",new DataStorage(getActivity()).loadFile().size()+"");
+        Toast.makeText(getActivity(),""+MainFragment.playlist.size(),Toast.LENGTH_SHORT).show();
     }
 
 

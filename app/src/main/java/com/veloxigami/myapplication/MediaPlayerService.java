@@ -94,6 +94,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         try{
             mediaPlayer.setDataSource(currentMedia.getData());
             currentFileIndex = MainFragment.currentFile;
+            Toast.makeText(getApplicationContext(),"Playlist Size: "+MainFragment.playlist.size() +"\nSong No.: "+(currentFileIndex+1) ,Toast.LENGTH_SHORT).show();
         } catch (IOException e) {
             e.printStackTrace();
             stopSelf();
@@ -178,7 +179,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     };
 
     public void updateSeekArc(){
-        handler.postDelayed(updatePositionRunnable,400);
+        handler.postDelayed(updatePositionRunnable,100);
     }
 
 
