@@ -26,7 +26,6 @@ public class DataStorage extends SQLiteOpenHelper{
 //    private static final String COLUMN_NAME_DATA
     private Context context;
 
-//    private static final String SQL_CREATE_ENTRIES = "CREATE TABLE" +
 
     public DataStorage(Context context, String name, SQLiteDatabase.CursorFactory factory, int version) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
