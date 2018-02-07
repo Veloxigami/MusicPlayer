@@ -94,6 +94,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         try{
             mediaPlayer.setDataSource(currentMedia.getData());
             currentFileIndex = MainFragment.currentFile;
+            MainActivity.durationText.setText(currentMedia.getDuration());
             Toast.makeText(getApplicationContext(),"Playlist Size: "+MainFragment.playlist.size() +"\nSong No.: "+(currentFileIndex+1) ,Toast.LENGTH_SHORT).show();
         } catch (IOException e) {
             e.printStackTrace();
@@ -175,6 +176,14 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         @Override
         public void run() {
             MainActivity.seekArc.setProgress(mediaPlayer.getCurrentPosition());
+
+
+             long currentTimeInMs = mediaPlayer.getCurrentPosition();
+             int currentTimeInMin = (int) ((currentTimeInMs/(1000))/60);
+             int leftSec = (int) ((currentTimeInMs/(1000))%60);
+             MainActivity.currentTimeText.setText(""+ currentTimeInMin+ ":" + String.format("%02d",leftSec));
+
+
         }
     };
 

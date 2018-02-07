@@ -25,7 +25,7 @@ public class MainActivity extends AppCompatActivity {
     private ViewPagerAdapter viewPagerAdapter;
     private ImageButton prevButton, playButton,nextButton;
     public static SeekArc seekArc;
-    private TextView songText;
+    public static TextView songText,currentTimeText,durationText;
     //private DataStorage dataStorage;
 
     public final static String PLAY_PAUSE_BUTTON_PRESSED = "com.veloxigami.myapplication.playpausebtnpressed";
@@ -44,7 +44,8 @@ public class MainActivity extends AppCompatActivity {
         nextButton = (ImageButton) findViewById(R.id.nextButton);
         seekArc = (SeekArc) findViewById(R.id.seekArc);
         songText = (TextView) findViewById(R.id.song_display_text);
-
+        currentTimeText = (TextView) findViewById(R.id.current_time_text);
+        durationText = (TextView) findViewById(R.id.song_duration_text);
         //dataStorage = new DataStorage(this);
 
 
