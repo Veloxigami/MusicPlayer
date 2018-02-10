@@ -2,15 +2,20 @@ package com.veloxigami.myapplication;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.support.design.widget.TabLayout;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.view.ContextThemeWrapper;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -23,10 +28,11 @@ public class MainActivity extends AppCompatActivity {
     private TabLayout tabLayout;
     private ViewPager viewPager;
     private ViewPagerAdapter viewPagerAdapter;
-    private ImageButton prevButton, playButton,nextButton;
+    private ImageButton prevButton, playButton,nextButton,saveButton;
     public static SeekArc seekArc;
     public static TextView songText,currentTimeText,durationText;
-    //private DataStorage dataStorage;
+    private DataStorage dataStorage;
+    private DatabaseManger db;
 
     public final static String PLAY_PAUSE_BUTTON_PRESSED = "com.veloxigami.myapplication.playpausebtnpressed";
     public final static String PREV_BUTTON_PRESSED = "com.veloxigami.myapplication.prevbtnpressed";
@@ -36,17 +42,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        db = new DatabaseManger(this);
 
-
-
+        dataStorage = new DataStorage(getApplicationContext(),db);
         prevButton = (ImageButton) findViewById(R.id.prevButton);
         playButton = (ImageButton) findViewById(R.id.playButton);
         nextButton = (ImageButton) findViewById(R.id.nextButton);
+        saveButton = (ImageButton) findViewById(R.id.save_button);
         seekArc = (SeekArc) findViewById(R.id.seekArc);
         songText = (TextView) findViewById(R.id.song_display_text);
         currentTimeText = (TextView) findViewById(R.id.current_time_text);
         durationText = (TextView) findViewById(R.id.song_duration_text);
-        //dataStorage = new DataStorage(this);
 
 
         toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -62,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
         prevButton.setOnClickListener(controlButtonsClickListener);
         playButton.setOnClickListener(controlButtonsClickListener);
         nextButton.setOnClickListener(controlButtonsClickListener);
+        saveButton.setOnClickListener(controlButtonsClickListener);
 
         registerPlayPauseBroadcast();
         registerSongTextChangeBroadcast();
@@ -88,11 +95,33 @@ public class MainActivity extends AppCompatActivity {
                     break;
                 case R.id.nextButton: nextButtonBroadcast();
                     break;
+                case R.id.save_button:
+                                        if(!MainFragment.playlist.isEmpty()){
+                                             AlertDialog.Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(MainActivity.this, R.style.myDialog));
+                                            LayoutInflater inflater = getLayoutInflater();
+                                            builder.setTitle("Save Playlist");
+                                            final EditText inputText = (EditText) findViewById(R.id.playlist_name_text);
+
+                                            builder.setView(inflater.inflate(R.layout.save_playlist_alert_dialog,null))
+                                            .setPositiveButton("Save", new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog, int which) {
+                                                    dataStorage.savePlaylist(inputText.getText().toString(),MainFragment.playlist);
+                                                }
+                                            })
+                                            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                                                @Override
+                                                public void onClick(DialogInterface dialog, int which) {
+                                                    dialog.cancel();
+                                                }
+                                            });
+                                            builder.create();
+                                            builder.show();
+                                        }
+                break;
             }
         }
     };
-
-
 
     private void playButtonBroadcast(){
         Intent intent = new Intent(PLAY_PAUSE_BUTTON_PRESSED);
@@ -152,8 +181,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onStop() {
-        super.onStop();
+    protected void onDestroy() {
+        super.onDestroy();
         unregisterReceiver(songTextChangeReceiver);
         unregisterReceiver(pauseBroadcastReceiver);
         unregisterReceiver(playBroadcastReceiver);

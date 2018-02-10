@@ -99,6 +99,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         } catch (IOException e) {
             e.printStackTrace();
             stopSelf();
+            Log.v("TAG","StopSelf called");
         }
         mediaPlayer.prepareAsync();
     }
@@ -122,6 +123,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         registerPrevButtonBroadcast();
 
         registerNextButtonBroadcast();
+
+        registerClearCommsReceiver();
     }
 
     @Override
@@ -130,10 +133,15 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         try{
             playList = new ArrayList<>();
             playList = MainFragment.playlist;
+            if(!playList.isEmpty())
             currentMedia = MainFragment.playlist.get(MainFragment.currentFile);
+            else{
+                onDestroy();
+            }
         }catch (NullPointerException e){
             e.printStackTrace();
             stopSelf();
+            Log.v("TAG","StopSelf called");
         }
 
         if(requestAudioFocus() == false)
@@ -142,7 +150,7 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         if (currentMedia.getData() != null && currentMedia.getData() !="") {
             initMediaPlayer();
         }
-        return super.onStartCommand(intent, flags, startId);
+        return START_NOT_STICKY;
     }
 
     @Override
@@ -168,26 +176,33 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         unregisterReceiver(playButtonBroadcast);
         unregisterReceiver(prevButtonBroadcast);
         unregisterReceiver(nextButtonBroadcast);
-
+        unregisterReceiver(clearCommsReceiver);
+        Log.v("TAG","StopSelf called");
         //new DataStorage(getApplicationContext()).clearCachedAudioPlaylist();
     }
 
     private final Runnable updatePositionRunnable = new Runnable() {
         @Override
         public void run() {
-            MainActivity.seekArc.setProgress(mediaPlayer.getCurrentPosition());
+            try {
+                MainActivity.seekArc.setProgress(mediaPlayer.getCurrentPosition());
 
 
-             long currentTimeInMs = mediaPlayer.getCurrentPosition();
-             int currentTimeInMin = (int) ((currentTimeInMs/(1000))/60);
-             int leftSec = (int) ((currentTimeInMs/(1000))%60);
-             MainActivity.currentTimeText.setText(""+ currentTimeInMin+ ":" + String.format("%02d",leftSec));
+                long currentTimeInMs = mediaPlayer.getCurrentPosition();
+                int currentTimeInMin = (int) ((currentTimeInMs/(1000))/60);
+                int leftSec = (int) ((currentTimeInMs/(1000))%60);
+                MainActivity.currentTimeText.setText(""+ currentTimeInMin+ ":" + String.format("%02d",leftSec));
+            }catch (IllegalStateException e){
+                e.printStackTrace();
+            }
+
 
 
         }
     };
 
     public void updateSeekArc(){
+        if(mediaPlayer != null)
         handler.postDelayed(updatePositionRunnable,100);
     }
 
@@ -397,6 +412,10 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
         if(mediaPlayer.isPlaying()){
             mediaPlayer.stop();
         }
+        if(MainFragment.playlist.isEmpty()){
+            mediaPlayer.reset();
+            mediaPlayer.release();
+        }
     }
 
     public void resumeMedia(){
@@ -485,7 +504,8 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
     private BroadcastReceiver playButtonBroadcast = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            if(!mediaPlayer.isPlaying()){
+            Log.v("TAG","Recieved playbtn broadcast");
+            if(mediaPlayer != null && !mediaPlayer.isPlaying() && !MainFragment.playlist.isEmpty()){
                 playMedia();
             }
             else{
@@ -568,4 +588,25 @@ public class MediaPlayerService extends Service implements MediaPlayer.OnComplet
 
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Clear all Communications since we've cleared playlist and nothing should be on the desk
+     */
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+    private BroadcastReceiver clearCommsReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            handler.removeCallbacksAndMessages(updatePositionRunnable);
+            MainActivity.seekArc.setProgress(0);
+            MainActivity.seekArc.setEnabled(false);
+            //mediaPlayer.reset();
+            mediaPlayer.release();
+            stopSelf();
+        }
+    };
+
+    private void registerClearCommsReceiver(){
+        IntentFilter intentFilter = new IntentFilter(MainFragment.Broadcast_CLEAR_ALL_COMMS);
+        registerReceiver(clearCommsReceiver,intentFilter);
+    }
 }

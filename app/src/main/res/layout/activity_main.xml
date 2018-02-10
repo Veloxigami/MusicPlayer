@@ -70,6 +70,8 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0.37"/>
 
+
+
         <RelativeLayout
             android:id="@+id/relativeLayout"
             android:layout_width="match_parent"
@@ -127,6 +129,14 @@
                 app:layout_constraintTop_toTopOf="parent">
 
                 <ImageButton
+                    android:id="@+id/save_button"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@android:drawable/ic_menu_save"
+                    android:layout_marginRight="4dp"
+                    android:background="@drawable/gradient"/>
+
+                <ImageButton
                     android:id="@+id/prevButton"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
@@ -159,13 +169,13 @@
                 android:layout_below="@+id/buttonsLayout"
                 android:background="#4395ffff"
                 app:tabGravity="fill"
-                app:tabMode="fixed"></android.support.design.widget.TabLayout>
+                app:tabMode="fixed"/>
 
             <android.support.v4.view.ViewPager
                 android:id="@+id/viewPager"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:layout_below="@+id/tabLayout"></android.support.v4.view.ViewPager>
+                android:layout_below="@+id/tabLayout"/>
 
 
         </RelativeLayout>

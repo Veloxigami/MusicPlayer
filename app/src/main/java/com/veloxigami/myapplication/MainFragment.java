@@ -39,12 +39,14 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
     //private DataStorage storage;
     private ArrayList<MusicFile> data = new ArrayList<>();
     public static int currentFile;
+    private Intent playerIntent;
 
     public static final String Broadcast_PLAY_NEW_AUDIO = "com.veloxigami.myapplication.playnewaudio";
     public final static String Broadcast_PLAY_BTN_CHANGE = "com.veloxigami.myapplication.playbuttonchange";
     public final static String Broadcast_STOP_PLAYING_FOR_CHANGE = "com.veloxigami.myapplication.stopplayingforchange";
     public final static String Broadcast_SONG_TEXT_CHANGE = "com.veloxigami.myapplication.songtextchange";
     public final static String Broadcast_TAPS_UPDATE = "com.veloxigami.myapplication.tapUpdate";
+    public final static String Broadcast_CLEAR_ALL_COMMS = "com.veloxigami.myapplication.clearallcomms";
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -103,7 +105,7 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
             storage.storeAudioIndex(audioIndex);*/
             serviceBound = true;
             Log.v("TAG", "Creating new instance");
-            Intent playerIntent = new Intent(getActivity(), MediaPlayerService.class);
+            playerIntent = new Intent(getActivity(), MediaPlayerService.class);
             getActivity().startService(playerIntent);
             getActivity().bindService(playerIntent, serviceConnection, Context.BIND_AUTO_CREATE);
         } else {
@@ -168,6 +170,11 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
         getActivity().sendBroadcast(intent);
     }
 
+    private void clearAllCommunications(){
+        Intent intent = new Intent(Broadcast_CLEAR_ALL_COMMS);
+        getActivity().sendBroadcast(intent);
+    }
+
     @Override
     public void onSongClick(int position) {
         playAudio(position);
@@ -184,6 +191,9 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
             playlist.clear();
             //storage.clearCachedAudioPlaylist();
             playingAdapter.notifyDataSetChanged();
+            clearAllCommunications();
+            //getActivity().unbindService(serviceConnection);
+            //getActivity().stopService(playerIntent);
             Log.v("REMOVE BTN", "Single element");
             Log.v("currentPosition", currentFile + "");
 
@@ -249,32 +259,13 @@ public class MainFragment extends Fragment implements NowPlayingAdapter.NowPlayi
     }
 
     @Override
-    public void onStop() {
-        super.onStop();
+    public void onDestroy() {
+        super.onDestroy();
         getActivity().unregisterReceiver(prevPlayingBroadcast);
         getActivity().unregisterReceiver(nextPlayingBroadcast);
         getActivity().unregisterReceiver(viewClickBroadcast);
         getActivity().unregisterReceiver(btnClickBroadcast);
+        getActivity().unbindService(serviceConnection);
+        getActivity().stopService(playerIntent);
     }
-
-    /*
-    private BroadcastReceiver prevBtnClickedReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-        }
-    };
-    private BroadcastReceiver nextBtnClickedReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-        }
-    };
-
-    private void registerPrevBtnClickReceiver(){
-        IntentFilter prevBtnClick = new IntentFilter(MainActivity.PREV_BUTTON_PRESSED);
-        IntentFilter nextBtnClick = new IntentFilter(MainActivity.NEXT_BUTTON_PRESSED);
-        getActivity().registerReceiver(prevBtnClickedReceiver,prevBtnClick);
-        getActivity().registerReceiver(nextBtnClickedReceiver,nextBtnClick);
-    }*/
 }
