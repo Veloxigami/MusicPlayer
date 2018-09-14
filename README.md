@@ -1,8 +1,9 @@
 # MusicPlayer
 
-I have created this lite music player with simple GUI interface for everyone. 
-I wanted to implement fast access to library as well as Now Playing playlist so I've used ViewPager to create two fragments and achieved this idea of mine.
-Also I've used [SeekArc Library](https://github.com/neild001/SeekArc) to give it a little cool look that user can enjoy.
+A simple lite music player with simple GUI interface for everyone. 
+Simple and quick access to your music library as well as "Now Playing" playlist which is implemented using the simple use of ViewPager to create two fragments.
+Large buttons for adding and removing songs for playlist.
+Also for giving the app a nice look [SeekArc Library](https://github.com/neild001/SeekArc) is used.
 
 <h2> Current Version </h2>
 <div align="center" style="display: inline">
